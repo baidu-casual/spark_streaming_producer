@@ -63,9 +63,20 @@ class sparkStreamng{
     println("Printing Schema of transactionDF: ")
     transactionDF.printSchema()
 
+    val schema = new StructType()
+      .add("id",IntegerType)
+      .add("train_id",IntegerType)
+      .add("position",IntegerType)
+      .add("shape",StringType)
+      .add("len",StringType)
+      .add("sides",StringType)
+      .add("roof",StringType)
+      .add("wheels",IntegerType)
+      .add("load_shape",StringType)
+      .add("load_num",IntegerType)
+      
     
-    
-    val temp=transactionDF
+    transactionDF
                 .selectExpr("CAST(topic AS STRING)", "CAST(value AS STRING)", "CAST(timestamp AS STRING)")
                 .writeStream
                 .format("kafka")
