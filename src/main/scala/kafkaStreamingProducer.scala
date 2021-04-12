@@ -43,16 +43,42 @@ class sparkStreamng{
 
     System.setProperty("HADOOP_USER_NAME","hadoop")
 
+    val trainsCsv = "/home/xs107-bairoy/xenonstack/l2/module4/spark_streaming_producer/files/trains/cars1.csv"
+    
+    val trains = spark.read
+            .option("header", "true")
+            .format("csv")
+            .load(trainsCsv)
+            .toDF()
 
-    val df = spark.readStream
-      .format("kafka")
-      .option("kafka.bootstrap.servers", kafkaServer)
-      .option("subscribe", kafkaTopicName)
-      .option("startingOffsets", "earliest")
-      .load()    
-    df.printSchema()
+    //val path = "/home/xs107-bairoy/xenonstack/l2/module4/spark_streaming_producer/files/data1.json"
+    val transactionDF = spark.readStream
+                .format("kafka")
+                .option("kafka.bootstrap.servers", kafkaServer)
+                .option("subscribe", kafkaTopicName)
+                .option("startingOffsets", "earliest")
+                .format("csv")
+              .load(trainsCsv)
 
+    println("Printing Schema of transactionDF: ")
+    transactionDF.printSchema()
 
+    
+    
+    val temp=transactionDF
+                .selectExpr("CAST(topic AS STRING)", "CAST(value AS STRING)", "CAST(timestamp AS STRING)")
+                .writeStream
+                .format("kafka")
+                .option("kafka.bootstrap.servers", kafkaServer)
+                .option("topic", kafkaTopicName)
+                .trigger(Trigger.ProcessingTime("1 seconds"))
+                .outputMode("append")
+                .foreachBatch(streamingFunction _)
+                .option("checkpointLocation","/tmp/spark/kafkaStreamingConsumer")
+                .start()
+                .awaitTermination()
+
+/*
     val schema = new StructType()
       .add("id",IntegerType)
       .add("firstname",StringType)
@@ -75,7 +101,8 @@ class sparkStreamng{
       .option("topic", kafkaTopicName)
       .option("checkpointLocation","/tmp/spark/kafkaStreamingProducer")
       .start()
-      .awaitTermination()
+      .awaitTermination()*/
+      
 
       spark.close()
     
