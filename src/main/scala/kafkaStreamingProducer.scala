@@ -41,83 +41,57 @@ class sparkStreamng{
     import spark.implicits._
 
 
-    System.setProperty("HADOOP_USER_NAME","hadoop")
-
-    val trainsCsv = "/home/xs107-bairoy/xenonstack/l2/module4/spark_streaming_producer/files/trains/cars1.csv"
+    System.setProperty("HADOOP_USER_NAME","hadoop") 
     
-    val trains = spark.read
-            .option("header", "true")
-            .format("csv")
-            .load(trainsCsv)
-            .toDF()
-
-    //val path = "/home/xs107-bairoy/xenonstack/l2/module4/spark_streaming_producer/files/data1.json"
-    val transactionDF = spark.readStream
-                .format("kafka")
-                .option("kafka.bootstrap.servers", kafkaServer)
-                .option("subscribe", kafkaTopicName)
-                .option("startingOffsets", "earliest")
-                .format("csv")
-              .load(trainsCsv)
-
-    println("Printing Schema of transactionDF: ")
-    transactionDF.printSchema()
-
-    val schema = new StructType()
-      .add("id",IntegerType)
-      .add("train_id",IntegerType)
-      .add("position",IntegerType)
-      .add("shape",StringType)
-      .add("len",StringType)
-      .add("sides",StringType)
-      .add("roof",StringType)
-      .add("wheels",IntegerType)
-      .add("load_shape",StringType)
-      .add("load_num",IntegerType)
-      
     
-    transactionDF
-                .selectExpr("CAST(topic AS STRING)", "CAST(value AS STRING)", "CAST(timestamp AS STRING)")
-                .writeStream
-                .format("kafka")
-                .option("kafka.bootstrap.servers", kafkaServer)
-                .option("topic", kafkaTopicName)
-                .trigger(Trigger.ProcessingTime("1 seconds"))
-                .outputMode("append")
-                .foreachBatch(streamingFunction _)
-                .option("checkpointLocation","/tmp/spark/kafkaStreamingConsumer")
-                .start()
-                .awaitTermination()
-
-/*
     val schema = new StructType()
-      .add("id",IntegerType)
-      .add("firstname",StringType)
-      .add("middlename",StringType)
-      .add("lastname",StringType)
-      .add("dob_year",IntegerType)
-      .add("dob_month",IntegerType)
-      .add("gender",StringType)
-      .add("salary",IntegerType)
+                                .add("id",IntegerType,false)
+                                .add("name",StringType, false)
+                                .add("dob_year",IntegerType, true)
+                                .add("dob_month",IntegerType, true)
+                                .add("gender",StringType, true)
+                                .add("salary",IntegerType, true)
+    val schema1 =ArrayType(schema)
+      
+      /*id":1,
+      "name":"James Smith",
+      "dob_year":2018,
+      "dob_month":1,
+      "gender":"M",
+      "salary":3000*/
+      
+    val personJson = "/home/xs107-bairoy/xenonstack/l2/module4/spark_streaming_producer/files/person"
+    val people = spark.readStream
+                .schema(schema)
+                .json(personJson)
+    people.printSchema()
+    //people.createOrReplaceTempView("value")
+    //val temp=spark.sql("select * from value")
+    
+    val peopleDF = people.selectExpr("struct(*) AS value")
+      //.select(from_json(col("value"), schema))
+      //.withColumn("person_explode",explode(col("value")))
+      //.select("value.*")
+    peopleDF.printSchema()
 
-    val personDF = df.selectExpr("CAST(value AS STRING)")
-      .select(from_json(col("value"), schema).as("data"))
-    personDF.printSchema()
-      
-    personDF.select(to_json(struct("data.*")) as "value")
-      .writeStream
-      .format("kafka")
-      .outputMode("update")
-      .option("kafka.bootstrap.servers", kafkaServer)
-      .option("topic", kafkaTopicName)
-      .option("checkpointLocation","/tmp/spark/kafkaStreamingProducer")
-      .start()
-      .awaitTermination()*/
-      
+    peopleDF
+          .selectExpr("CAST(value AS STRING)")          
+          .writeStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", kafkaServer)
+          .option("topic", kafkaTopicName)
+          //.trigger(Trigger.ProcessingTime("1 seconds"))
+          .outputMode("update")
+          .foreachBatch(streamingFunction _)
+          .option("checkpointLocation","/tmp/spark")
+          .start()
+          .awaitTermination()
+
 
       spark.close()
     
   }
+  /*
   def temp(kafkaTopicName: String = "test", kafkaServer: String = "localhost:9092"): Unit = {
 
     val conf = new SparkConf().setAppName("KAFKA").setMaster("local");
@@ -155,9 +129,9 @@ class sparkStreamng{
       .add("gender",StringType)
       .add("salary",IntegerType)
 
-    val personDF = df.selectExpr("CAST(value AS STRING)")
-      .select(from_json(col("value"), schema).as("data"))
-    personDF.printSchema()
+    
+
+    /*
       
     personDF.select(to_json(struct("data.*")) as "value")
       .writeStream
@@ -166,10 +140,11 @@ class sparkStreamng{
       .option("kafka.bootstrap.servers", kafkaServer)
       .option("topic", kafkaTopicName)
       .option("checkpointLocation","/tmp/spark/kafkaStreamingProducer")
-      .start()
+      .start()*/
+      
 
       spark.close()
-  }
+  }*/
   
 }
 object kafkaStreamingProducer {  
