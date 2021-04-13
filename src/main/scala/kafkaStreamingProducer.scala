@@ -154,9 +154,5 @@ object kafkaStreamingProducer {
     sS.kafkaConsume()
     //sS.temp()
     println("\n\n\t\tKafka Producer Application Completed ...\n\n")
-  }
-
-  
+  }  
 }
-
-
