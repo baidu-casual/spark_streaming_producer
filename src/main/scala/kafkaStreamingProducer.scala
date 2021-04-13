@@ -27,7 +27,7 @@ class sparkStreamng{
         println("\n\n\t\tBATCH "+batchId+"\n\n")
         batchDf.show(false)
   }
-  def kafkaConsume(kafkaTopicName: String = "test", kafkaServer: String = "localhost:9092"): Unit = {
+  def kafkaConsume(kafkaTopicName: String = "test-events", kafkaServer: String = "localhost:9092"): Unit = {
     val conf = new SparkConf().setAppName("KAFKA").setMaster("local");
     val sc = new SparkContext(conf)
     sc.setLogLevel("ERROR")
@@ -81,8 +81,8 @@ class sparkStreamng{
           .option("kafka.bootstrap.servers", kafkaServer)
           .option("topic", kafkaTopicName)
           //.trigger(Trigger.ProcessingTime("1 seconds"))
-          .outputMode("update")
-          .foreachBatch(streamingFunction _)
+          .outputMode("append")
+          //.foreachBatch(streamingFunction _)
           .option("checkpointLocation","/tmp/spark")
           .start()
           .awaitTermination()
