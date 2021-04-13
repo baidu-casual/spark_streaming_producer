@@ -80,7 +80,7 @@ class sparkStreamng{
           .format("kafka")
           .option("kafka.bootstrap.servers", kafkaServer)
           .option("topic", kafkaTopicName)
-          //.trigger(Trigger.ProcessingTime("1 seconds"))
+          //.trigger(Trigger.ProcessingTime("30 seconds"))
           .outputMode("append")
           //.foreachBatch(streamingFunction _)
           .option("checkpointLocation","/tmp/spark")
